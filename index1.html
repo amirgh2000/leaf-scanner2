@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تشخیص سلامت برگ (نسخه آزمایشی)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Vazirmatn', sans-serif;
+        }
+
+        .file-input-container {
+            position: relative;
+            width: 100%;
+            height: 12rem;
+        }
+
+        .file-input-label {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            height: 100%;
+            border: 3px dashed #cbd5e1;
+            border-radius: 0.75rem;
+            cursor: pointer;
+            transition: background-color 0.2s, border-color 0.2s;
+        }
+
+            .file-input-label:hover {
+                background-color: #f1f5f9;
+                border-color: #94a3b8;
+            }
+
+        #image-preview {
+            max-width: 100%;
+            max-height: 11rem;
+            border-radius: 0.5rem;
+            margin: 0.5rem auto;
+            display: block;
+        }
+
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+            display: none; /* Hidden by default */
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+
+    <div class="w-full max-w-md mx-auto bg-white rounded-2xl shadow-lg p-6 md:p-8">
+
+        <div class="text-center mb-6">
+            <h1 class="text-2xl md:text-3xl font-bold text-gray-800">تشخیص سلامت برگ</h1>
+            <p class="text-gray-500 mt-2">یک تصویر از برگ مورد نظر را برای تحلیل بارگذاری کنید</p>
+        </div>
+
+        <div class="mb-4">
+            <div class="file-input-container">
+                <label for="leaf-image-upload" class="file-input-label" id="upload-label">
+                    <div id="upload-prompt" class="text-center text-gray-400">
+                        <i class="fas fa-cloud-arrow-up text-4xl"></i>
+                        <p class="mt-2 font-semibold">انتخاب تصویر</p>
+                    </div>
+                </label>
+                <input type="file" id="leaf-image-upload" class="hidden" accept="image/*">
+            </div>
+            <div id="image-preview-container" class="mt-4 hidden text-center">
+                <img id="image-preview" src="#" alt="پیش‌نمایش برگ">
+            </div>
+        </div>
+
+        <button id="scan-button" class="w-full bg-green-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-700 transition-colors duration-300 flex items-center justify-center gap-2 disabled:bg-gray-400 disabled:cursor-not-allowed" disabled>
+            <i class="fas fa-camera"></i>
+            <span id="scan-button-text">اسکن تصویر</span>
+            <div class="loader" id="loader"></div>
+        </button>
+
+        <!-- Result Section -->
+        <div id="result-section" class="mt-6 text-center hidden">
+            <h2 class="text-xl font-bold text-gray-700 mb-3">نتیجه تحلیل:</h2>
+            <div id="result-display" class="p-4 rounded-lg text-white">
+                <p class="text-2xl font-bold mb-1" id="status-text"></p>
+                <p class="text-sm opacity-90" id="confidence-text"></p>
+            </div>
+            <div id="info-section" class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg hidden">
+                <p id="info-text" class="text-sm text-blue-800"></p>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const imageUploadInput = document.getElementById('leaf-image-upload');
+        const uploadLabel = document.getElementById('upload-label');
+        const uploadPrompt = document.getElementById('upload-prompt');
+        const imagePreviewContainer = document.getElementById('image-preview-container');
+        const imagePreview = document.getElementById('image-preview');
+        const scanButton = document.getElementById('scan-button');
+        const scanButtonText = document.getElementById('scan-button-text');
+        const loader = document.getElementById('loader');
+        const resultSection = document.getElementById('result-section');
+        const resultDisplay = document.getElementById('result-display');
+        const statusText = document.getElementById('status-text');
+        const confidenceText = document.getElementById('confidence-text');
+        const infoSection = document.getElementById('info-section');
+        const infoText = document.getElementById('info-text');
+
+        let file = null;
+
+        imageUploadInput.addEventListener('change', (event) => {
+            file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    imagePreview.src = e.target.result;
+                    imagePreviewContainer.classList.remove('hidden');
+                    uploadPrompt.classList.add('hidden');
+                    scanButton.disabled = false;
+                    resultSection.classList.add('hidden');
+                    infoSection.classList.add('hidden');
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        uploadLabel.addEventListener('click', () => imageUploadInput.click());
+
+        scanButton.addEventListener('click', () => {
+            if (!file) return;
+
+            // Show loader and disable button
+            loader.style.display = 'block';
+            scanButton.disabled = true;
+            scanButtonText.textContent = 'در حال تحلیل...';
+            resultSection.classList.add('hidden');
+            infoSection.classList.add('hidden');
+
+            // Simulate processing time
+            setTimeout(() => {
+                // Simulate a result randomly
+                const isHealthy = Math.random() > 0.4; // 60% chance of being healthy
+                const confidence = Math.random() * (99 - 85) + 85; // Random confidence
+
+                displayResult(isHealthy, confidence.toFixed(1));
+
+                // Hide loader and re-enable button
+                loader.style.display = 'none';
+                scanButton.disabled = false;
+                scanButtonText.textContent = 'اسکن تصویر';
+            }, 2500); // 2.5 second delay
+        });
+
+        function displayResult(isHealthy, confidence) {
+            resultSection.classList.remove('hidden');
+
+            if (isHealthy) {
+                statusText.textContent = 'سالم';
+                resultDisplay.className = 'p-4 rounded-lg text-white bg-green-500';
+                infoSection.classList.add('hidden');
+            } else {
+                const diseases = ['لکه سیاه', 'سفیدک پودری', 'زنگ گیاهی', 'کپک خاکستری'];
+                const randomDisease = diseases[Math.floor(Math.random() * diseases.length)];
+                statusText.textContent = `بیمار: ${randomDisease}`;
+                resultDisplay.className = 'p-4 rounded-lg text-white bg-red-500';
+
+                infoText.textContent = `این یک تحلیل شبیه‌سازی شده است. برای تشخیص دقیق، با یک متخصص کشاورزی مشورت کنید.`;
+                infoSection.classList.remove('hidden');
+            }
+
+            confidenceText.textContent = `میزان اطمینان: ${confidence}%`;
+        }
+    </script>
+</body>
+</html>
